@@ -1,0 +1,26 @@
+services:
+  shopcart-db:
+    image: postgres:16-alpine
+    container_name: shopcart_postgres
+    environment:
+      POSTGRES_USER: shopcart_user
+      POSTGRES_PASSWORD: shopcart_password
+      POSTGRES_DB: shopcart_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  db-admin:
+    image: dpage/pgadmin4:latest
+    container_name: shopcart_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@shopcart.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "8081:80"
+    depends_on:
+      - shopcart-db
+
+volumes:
+  postgres_data:
