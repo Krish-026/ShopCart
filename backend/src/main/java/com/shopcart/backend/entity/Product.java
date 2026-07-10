@@ -1,9 +1,22 @@
 package com.shopcart.backend.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 
+@Entity
+@Table(
+        name = "products",
+        indexes = {
+                @Index(name = "idx_product_category_id", columnList = "category_id")
+        }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Product extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
