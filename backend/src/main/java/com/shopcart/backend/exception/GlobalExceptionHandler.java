@@ -17,6 +17,19 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex){
+        ErrorCode errorCode = ex.getErrorCode();
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message(ex.getMessage())
+                .errorCode(errorCode.getCode()) // e.g. "CAT_001"
+                .build();
+
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+    }
+
     // Handle custom Business Exceptions like "Email already registered"
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
