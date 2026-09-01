@@ -8,6 +8,7 @@ import com.shopcart.backend.repository.UserRepository;
 import com.shopcart.backend.service.UserService;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +20,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -28,14 +29,14 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException(("Email is already registered!"));
         }
 
-        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+        Role customerRole = roleRepository.findByName("ROLE_ADMIN")
                 .orElseThrow(() -> new RuntimeException("Error: Default role not found in database;"));
 
         User user = User.builder()
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .email(dto.getEmail())
-                .password(dto.getPassword()) // We'll hash this later
+                .password(passwordEncoder.encode(dto.getPassword())) // We'll hash this later
                 .roles(Set.of(customerRole))
                 .build();
         return userRepository.save(user);
