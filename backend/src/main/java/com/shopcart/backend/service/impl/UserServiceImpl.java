@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException(("Email is already registered!"));
         }
 
-        Role customerRole = roleRepository.findByName("ROLE_ADMIN")
+        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
                 .orElseThrow(() -> new RuntimeException("Error: Default role not found in database;"));
 
         User user = User.builder()
