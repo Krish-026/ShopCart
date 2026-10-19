@@ -27,9 +27,10 @@ public class Order extends BaseEntity{
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false, length = 50)
     @Builder.Default
-    private String orderStatus = "PENDING"; // PENDING, SHIPPED, DELIVERED
+    private OrderStatus orderStatus = OrderStatus.PENDING;
 
     @Column(name = "shipping_address", columnDefinition = "TEXT", nullable = false)
     private String shippingAddress;

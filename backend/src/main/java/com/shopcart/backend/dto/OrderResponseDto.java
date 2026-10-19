@@ -1,5 +1,6 @@
 package com.shopcart.backend.dto;
 
+import com.shopcart.backend.entity.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class OrderResponseDto {
     private Long userId;
     private String userEmail;
     private BigDecimal totalAmount;
-    private String orderStatus;
+    private OrderStatus orderStatus;
     private String shippingAddress;
     private List<OrderItemResponseDto> orderItems;
 }
