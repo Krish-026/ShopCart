@@ -5,6 +5,7 @@ import com.shopcart.backend.dto.OrderItemResponseDto;
 import com.shopcart.backend.dto.OrderResponseDto;
 import com.shopcart.backend.dto.OrderStatusUpdateDto;
 import com.shopcart.backend.entity.*;
+import com.shopcart.backend.exception.BadRequestException;
 import com.shopcart.backend.exception.ErrorCode;
 import com.shopcart.backend.exception.ResourceNotFoundException;
 import com.shopcart.backend.repository.*;
@@ -56,7 +57,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = Order.builder()
                 .user(user)
                 .shippingAddress(formattedAddress)
-                .orderStatus("PENDING")
+                .orderStatus(OrderStatus.PENDING)
                 .totalAmount(BigDecimal.ZERO)
                 .orderItems(new ArrayList<>())
                 .build();
@@ -144,10 +145,51 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Order not found with ID: " + orderId));
-        order.setOrderStatus(request.getStatus());
+
+        OrderStatus newStatus = request.getStatus();
+
+        if(!order.getOrderStatus().canTransitionTo(newStatus)){
+            throw new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Invalid status transition from " + order.getOrderStatus() + " to " + newStatus);
+        }
+
+        // If an admin cancels the order, restore stock back to products
+        if(newStatus == OrderStatus.CANCELLED){
+            restoreInventory(order);
+        }
+
+        order.setOrderStatus(newStatus);
 
         Order updatedOrder = orderRepository.save(order);
         return mapToOrderResponseDto(updatedOrder);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponseDto cancelOrder(String userEmail, Long orderId) {
+        // 1. Check user
+        // 2. Check order
+        // 3. Status update
+        // 4. Inventory update
+        // 5. Save
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.UNAUTHORIZED_ACCESS, "User not found"));
+
+        Order order = orderRepository.findByIdAndUserId(orderId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Order not found with ID: " + orderId));
+
+        if(!order.getOrderStatus().canTransitionTo(OrderStatus.CANCELLED)){
+            throw new BadRequestException(
+                    ErrorCode.INVALID_INPUT,
+                    "Order cannot be cancelled in its current state: " + order.getOrderStatus()
+            );
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        restoreInventory(order);
+
+        Order updateOrder = orderRepository.save(order);
+
+        return mapToOrderResponseDto(updateOrder);
     }
 
     private OrderResponseDto mapToOrderResponseDto(Order order){
@@ -173,5 +215,13 @@ public class OrderServiceImpl implements OrderService {
                 .shippingAddress(order.getShippingAddress())
                 .orderItems(itemResponseDtos)
                 .build();
+    }
+
+    private void restoreInventory(Order order){
+        for (OrderItem item : order.getOrderItems()){
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+            productRepository.save(product);
+        }
     }
 }

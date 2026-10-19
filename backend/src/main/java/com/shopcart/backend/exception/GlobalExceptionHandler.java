@@ -30,6 +30,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadRequestException(BadRequestException ex){
+        ErrorCode errorCode = ex.getErrorCode();
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message(ex.getMessage())
+                .errorCode(errorCode.getCode())
+                .build();
+
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+    }
+
     // Handle custom Business Exceptions like "Email already registered"
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
@@ -71,4 +84,6 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
+
+
 }

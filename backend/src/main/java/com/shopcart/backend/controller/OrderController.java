@@ -82,4 +82,15 @@ public class OrderController {
         OrderResponseDto order = orderService.updateOrderStatus(id, request);
         return ResponseEntity.ok(ResponseUtil.success(order, "Order status updated successfully"));
     }
+
+    @PatchMapping("/{id}/cancel")
+    @Operation(summary = "Customer: Cancel an order before shipment")
+    public ResponseEntity<ApiResponse<OrderResponseDto>> cancelOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long id
+    ){
+        OrderResponseDto order = orderService.cancelOrder(userDetails.getUsername(), id);
+
+        return ResponseEntity.ok(ResponseUtil.success(order, "Order cancelled successfully"));
+    }
 }

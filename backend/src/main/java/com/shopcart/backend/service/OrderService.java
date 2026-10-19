@@ -12,4 +12,5 @@ public interface OrderService {
     OrderResponseDto getOrderById(String userEmail, Long orderId);
     List<OrderResponseDto> getAllOrders();
     OrderResponseDto updateOrderStatus(Long orderId, OrderStatusUpdateDto request);
+    OrderResponseDto cancelOrder(String userEmail, Long orderId);
 }
