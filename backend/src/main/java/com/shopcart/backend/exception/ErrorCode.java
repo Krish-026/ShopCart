@@ -10,6 +10,7 @@ public enum ErrorCode {
     UNAUTHORIZED_ACCESS("AUTH_001", "Unauthorized access", HttpStatus.UNAUTHORIZED),
     INVALID_CREDENTIALS("AUTH_002", "Invalid username or password", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED("AUTH_003", "JWT token has expired", HttpStatus.UNAUTHORIZED),
+    USER_NOT_FOUND("AUTH_004", "User not found", HttpStatus.NOT_FOUND),
 
     // Category Domain
     CATEGORY_NOT_FOUND("CAT_001", "Category not found", HttpStatus.NOT_FOUND),
@@ -19,6 +20,17 @@ public enum ErrorCode {
     // Product Domain
     PRODUCT_NOT_FOUND("PROD_001", "Product not found", HttpStatus.NOT_FOUND),
     INSUFFICIENT_STOCK("PROD_002", "Product stock is insufficient", HttpStatus.BAD_REQUEST),
+
+    // Cart & Order Domain
+    CART_NOT_FOUND("CART_001", "Cart not found", HttpStatus.NOT_FOUND),
+    CART_EMPTY("CART_002", "Cart is empty", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_FOUND("ORD_001", "Order not found", HttpStatus.NOT_FOUND),
+    INVALID_ORDER_STATUS("ORD_002", "Operation not allowed for current order status", HttpStatus.BAD_REQUEST),
+
+    // Payment Domain
+    RESOURCE_NOT_FOUND("SYS_000", "Request resource not found", HttpStatus.NOT_FOUND),
+    PAYMENT_NOT_FOUND("PAY_001", "No payment record found", HttpStatus.NOT_FOUND),
+    PAYMENT_FAILED("PAY_002", "Payment processing failed", HttpStatus.BAD_REQUEST),
 
     // General
     INTERNAL_SERVER_ERROR("SYS_001", "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR),
