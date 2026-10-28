@@ -32,11 +32,11 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponseDto checkout(String userEmail, OrderCheckoutRequestDto request) {
-        User user = userRepository.findByEmail(userEmail).orElseThrow(()-> new ResourceNotFoundException(ErrorCode.UNAUTHORIZED_ACCESS, "User not found"));
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new ResourceNotFoundException(ErrorCode.UNAUTHORIZED_ACCESS, "User not found"));
 
         // 1. Fetch and format the selected shipping address
         Address address = addressRepository.findByIdAndUserId(request.getAddressId(), user.getId())
-                .orElseThrow(()-> new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Address not found or does not belong to user"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Address not found or does not belong to user"));
 
         String formattedAddress = String.format(
                 "%s, %s, %s, %s - %s, %s | Phone: %s",
@@ -64,11 +64,16 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        // 4. Validate stock, decrement inventory, and build OrderItems
-        for(CartItem cartItem : cart.getCartItems()){
-            Product product = cartItem.getProduct();
+        // 4. Validate stock with Pessimistic lock, decrement inventory, and build OrderItems
+        for (CartItem cartItem : cart.getCartItems()) {
+            // Product product = cartItem.getProduct();
+            Product product = productRepository.findByIdWithLock(cartItem.getProduct().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            ErrorCode.PRODUCT_NOT_FOUND,
+                            "Product not found with ID: " + cartItem.getProduct().getId()
+                    ));
 
-            if(product.getStockQuantity() < cartItem.getQuantity()){
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
                 throw new ResourceNotFoundException(ErrorCode.INSUFFICIENT_STOCK, "Insufficient stock for product: " + product.getName() + ". Available: " + product.getStockQuantity());
             }
 
@@ -148,12 +153,12 @@ public class OrderServiceImpl implements OrderService {
 
         OrderStatus newStatus = request.getStatus();
 
-        if(!order.getOrderStatus().canTransitionTo(newStatus)){
-            throw new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Invalid status transition from " + order.getOrderStatus() + " to " + newStatus);
+        if (!order.getOrderStatus().canTransitionTo(newStatus)) {
+            throw new BadRequestException(ErrorCode.INVALID_INPUT, "Invalid status transition from " + order.getOrderStatus() + " to " + newStatus);
         }
 
         // If an admin cancels the order, restore stock back to products
-        if(newStatus == OrderStatus.CANCELLED){
+        if (newStatus == OrderStatus.CANCELLED) {
             restoreInventory(order);
         }
 
@@ -177,7 +182,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findByIdAndUserId(orderId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INVALID_INPUT, "Order not found with ID: " + orderId));
 
-        if(!order.getOrderStatus().canTransitionTo(OrderStatus.CANCELLED)){
+        if (!order.getOrderStatus().canTransitionTo(OrderStatus.CANCELLED)) {
             throw new BadRequestException(
                     ErrorCode.INVALID_INPUT,
                     "Order cannot be cancelled in its current state: " + order.getOrderStatus()
@@ -192,7 +197,7 @@ public class OrderServiceImpl implements OrderService {
         return mapToOrderResponseDto(updateOrder);
     }
 
-    private OrderResponseDto mapToOrderResponseDto(Order order){
+    private OrderResponseDto mapToOrderResponseDto(Order order) {
         List<OrderItemResponseDto> itemResponseDtos = order.getOrderItems().stream()
                 .map(item -> OrderItemResponseDto.builder()
                         .id(item.getId())
@@ -217,9 +222,14 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    private void restoreInventory(Order order){
-        for (OrderItem item : order.getOrderItems()){
-            Product product = item.getProduct();
+    private void restoreInventory(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+//            Product product = item.getProduct();
+            Product product = productRepository.findByIdWithLock(item.getProduct().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            ErrorCode.PRODUCT_NOT_FOUND,
+                            "Product not found with ID: " + item.getProduct().getId()
+                    ));
             product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
             productRepository.save(product);
         }
