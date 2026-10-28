@@ -1,6 +1,7 @@
 package com.shopcart.backend.config;
 
 import com.shopcart.backend.security.CustomUserDetailsService;
+import com.shopcart.backend.security.JwtAuthenticationEntryPoint;
 import com.shopcart.backend.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,16 +28,33 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/users/register", "/auth/login").permitAll()
+                        // Public Swagger & OpenAPI
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        // Public Auth & Catalog Browsing
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/users/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+
+                        // Customer Authenticated Endpoints
+                        .requestMatchers("/cart/**").authenticated()
+                        .requestMatchers("/orders/**").authenticated()
+                        .requestMatchers("/payments/**").authenticated()
+
+                        // Any other request
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
