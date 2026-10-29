@@ -9,8 +9,11 @@ import com.shopcart.backend.exception.BadRequestException;
 import com.shopcart.backend.exception.ErrorCode;
 import com.shopcart.backend.exception.ResourceNotFoundException;
 import com.shopcart.backend.repository.*;
+import com.shopcart.backend.response.PageResponse;
 import com.shopcart.backend.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -108,16 +111,14 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<OrderResponseDto> getUserOrders(String userEmail) {
+    public PageResponse<OrderResponseDto> getUserOrders(String userEmail, Pageable pageable) {
         // 1. Find User, or throw error
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.UNAUTHORIZED_ACCESS, "User not found"));
         // 2. Find User's order or throw error
-        List<Order> userOrders = orderRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        Page<Order> orderPage = orderRepository.findByUserId(user.getId(), pageable);
         // 3. Set response
-        return userOrders.stream()
-                .map(this::mapToOrderResponseDto)
-                .collect(Collectors.toList());
+        return PageResponse.from(orderPage.map(this::mapToOrderResponseDto));
     }
 
     @Override
@@ -135,11 +136,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderResponseDto> getAllOrders() {
-        List<Order> orderList = orderRepository.findAll();
-        return orderList.stream()
-                .map(this::mapToOrderResponseDto)
-                .collect(Collectors.toList());
+    public PageResponse<OrderResponseDto> getAllOrders(Pageable pageable) {
+        Page<Order> orderPage = orderRepository.findAll(pageable);
+        return PageResponse.from(orderPage.map(this::mapToOrderResponseDto));
     }
 
     @Override

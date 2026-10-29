@@ -9,8 +9,11 @@ import com.shopcart.backend.exception.ErrorCode;
 import com.shopcart.backend.exception.ResourceNotFoundException;
 import com.shopcart.backend.repository.CategoryRepository;
 import com.shopcart.backend.repository.ProductRepository;
+import com.shopcart.backend.response.PageResponse;
 import com.shopcart.backend.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,10 +47,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponseDto> getAllProducts() {
-        return productRepository.findAll().stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+    public PageResponse<ProductResponseDto> getAllProducts(Pageable pageable) {
+        Page<Product> productPage = productRepository.findAll(pageable);
+        return PageResponse.from(productPage.map(this::mapToDto));
     }
 
     @Override
@@ -59,25 +61,26 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponseDto> getProductsByCategory(Long categoryId) {
+    public PageResponse<ProductResponseDto> getProductsByCategory(Long categoryId, Pageable pageable) {
         if(!categoryRepository.existsById(categoryId)){
             throw new ResourceNotFoundException(ErrorCode.CATEGORY_NOT_FOUND, "Category not found with ID: "+ categoryId);
         }
 
-        return productRepository.findByCategoryId(categoryId).stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        Page<Product> productPage = productRepository.findByCategoryId(categoryId, pageable);
+
+        return PageResponse.from(productPage.map(this::mapToDto));
     }
 
     @Override
     @Transactional
-    public List<ProductResponseDto> searchProducts(String keyword) {
+    public PageResponse<ProductResponseDto> searchProducts(String keyword, Pageable pageable) {
         if(keyword == null || keyword.trim().isEmpty()){
-            return getAllProducts();
+            return getAllProducts(pageable);
         }
-        return productRepository.searchProducts(keyword.trim()).stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+
+        Page<Product> productPage = productRepository.searchProducts(keyword.trim(), pageable);
+
+        return PageResponse.from(productPage.map(this::mapToDto));
     }
 
     @Override
