@@ -1,6 +1,8 @@
 package com.shopcart.backend.repository;
 
 import com.shopcart.backend.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,4 +14,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
     Optional<Order> findByIdAndUserId(Long orderID, Long userId);
+    Page<Order> findByUserId(Long userId, Pageable pageable);
 }

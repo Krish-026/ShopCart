@@ -4,6 +4,7 @@ import com.shopcart.backend.dto.OrderCheckoutRequestDto;
 import com.shopcart.backend.dto.OrderResponseDto;
 import com.shopcart.backend.dto.OrderStatusUpdateDto;
 import com.shopcart.backend.response.ApiResponse;
+import com.shopcart.backend.response.PageResponse;
 import com.shopcart.backend.response.ResponseUtil;
 import com.shopcart.backend.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,11 +46,17 @@ public class OrderController {
     }
 
     @GetMapping
-    @Operation(summary = "Get current logged-in user order history")
-    public ResponseEntity<ApiResponse<List<OrderResponseDto>>> getUserOrders(
-            @AuthenticationPrincipal UserDetails userDetails
+    @Operation(summary = "Get current logged-in user order history (Paginated)")
+    public ResponseEntity<ApiResponse<PageResponse<OrderResponseDto>>> getUserOrders(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+
     ){
-        List<OrderResponseDto> orders = orderService.getUserOrders(userDetails.getUsername());
+        Pageable pageable = createPageable(page, size, sortBy, sortDir);
+        PageResponse<OrderResponseDto> orders = orderService.getUserOrders(userDetails.getUsername(),pageable);
 
         return ResponseEntity.ok(ResponseUtil.success(orders, "Order history retrieved successfully"));
     }
@@ -66,9 +76,15 @@ public class OrderController {
 
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Admin : Get all platform orders")
-    public ResponseEntity<ApiResponse<List<OrderResponseDto>>> getAllOrders(){
-        List<OrderResponseDto> orders = orderService.getAllOrders();
+    @Operation(summary = "Admin : Get all platform orders (Paginated)")
+    public ResponseEntity<ApiResponse<PageResponse<OrderResponseDto>>> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ){
+        Pageable pageable = createPageable(page, size, sortBy, sortDir);
+        PageResponse<OrderResponseDto> orders = orderService.getAllOrders(pageable);
         return ResponseEntity.ok(ResponseUtil.success(orders, "All platform orders retrieved successfully"));
     }
 
@@ -92,5 +108,12 @@ public class OrderController {
         OrderResponseDto order = orderService.cancelOrder(userDetails.getUsername(), id);
 
         return ResponseEntity.ok(ResponseUtil.success(order, "Order cancelled successfully"));
+    }
+
+    private Pageable createPageable(int page, int size, String sortBy, String sortDir){
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        return PageRequest.of(page, size, sort);
     }
 }

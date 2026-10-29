@@ -2,6 +2,8 @@ package com.shopcart.backend.repository;
 
 import com.shopcart.backend.entity.Product;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +16,7 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    List<Product> findByCategoryId(Long categoryId);
+    Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
     List<Product> findByCategorySlug(String categorySlug);
     List<Product> findByNameContainingIgnoreCase(String name);
     List<Product> findByStockQuantityGreaterThan(Integer minStock);
@@ -22,7 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Search products by name keyword or category name
     @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<Product> searchProducts(@Param("keyword") String keyword);
+    Page<Product> searchProducts(@Param("keyword") String keyword, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p WHERE p.id = :id")
