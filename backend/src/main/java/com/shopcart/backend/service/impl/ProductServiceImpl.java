@@ -12,6 +12,9 @@ import com.shopcart.backend.repository.ProductRepository;
 import com.shopcart.backend.response.PageResponse;
 import com.shopcart.backend.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "product_lists", allEntries = true)
     public ProductResponseDto createProduct(ProductRequestDto dto) {
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CATEGORY_NOT_FOUND, "Category not found with ID: " + dto.getCategoryId()));
@@ -53,6 +57,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = "products", key = "#id")
     public ProductResponseDto getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PRODUCT_NOT_FOUND, "Product not found with ID: " + id));
@@ -84,6 +89,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
+    @Caching( evict = {
+            @CacheEvict(value = "products", key = "#id"),
+            @CacheEvict(value = "product_lists", allEntries = true)
+        }
+    )
     public ProductResponseDto updateProduct(Long id, ProductRequestDto dto) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PRODUCT_NOT_FOUND, "Product not found with ID: " + id));
@@ -102,6 +113,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "products", key = "#id"),
+            @CacheEvict(value = "product_lists", allEntries = true)
+    })
     public void deleteProduct(Long id) {
         if(!productRepository.existsById(id)){
             throw new ResourceNotFoundException(ErrorCode.PRODUCT_NOT_FOUND, "Product not found with ID: " + id);
