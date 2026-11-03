@@ -81,6 +81,8 @@ public class CategoryServiceImpl implements CategoryService {
         if(!categoryRepository.existsById(id)){
             throw new ResourceNotFoundException(ErrorCode.CATEGORY_NOT_FOUND, "Category not found with ID : " + id);
         }
+
+        categoryRepository.deleteById(id);
     }
 
     // Methods
