@@ -1,5 +1,6 @@
 package com.shopcart.backend.service;
 
+import com.shopcart.backend.dto.ProductFilterCriteriaDto;
 import com.shopcart.backend.dto.ProductRequestDto;
 import com.shopcart.backend.dto.ProductResponseDto;
 import com.shopcart.backend.response.PageResponse;
@@ -15,4 +16,6 @@ public interface ProductService {
     PageResponse<ProductResponseDto> searchProducts(String keyword, Pageable pageable);
     ProductResponseDto updateProduct(Long id, ProductRequestDto dto);
     void deleteProduct(Long id);
+
+    PageResponse<ProductResponseDto> filterProducts(ProductFilterCriteriaDto criteria, Pageable pageable);
 }
