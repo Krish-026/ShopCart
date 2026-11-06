@@ -1,6 +1,7 @@
 package com.shopcart.backend.service.impl;
 
 import com.shopcart.backend.dto.CategoryResponseDto;
+import com.shopcart.backend.dto.ProductFilterCriteriaDto;
 import com.shopcart.backend.dto.ProductRequestDto;
 import com.shopcart.backend.dto.ProductResponseDto;
 import com.shopcart.backend.entity.Category;
@@ -11,12 +12,14 @@ import com.shopcart.backend.repository.CategoryRepository;
 import com.shopcart.backend.repository.ProductRepository;
 import com.shopcart.backend.response.PageResponse;
 import com.shopcart.backend.service.ProductService;
+import com.shopcart.backend.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -123,6 +126,14 @@ public class ProductServiceImpl implements ProductService {
             throw new ResourceNotFoundException(ErrorCode.PRODUCT_NOT_FOUND, "Product not found with ID: " + id);
         }
         productRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ProductResponseDto> filterProducts(ProductFilterCriteriaDto criteria, Pageable pageable) {
+        Specification<Product> spec = ProductSpecification.withFilters(criteria);
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
+        return PageResponse.from(productPage.map(this::mapToDto));
     }
 
 
