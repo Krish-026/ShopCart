@@ -5,6 +5,7 @@ import com.shopcart.backend.dto.ProductRequestDto;
 import com.shopcart.backend.dto.ProductResponseDto;
 import com.shopcart.backend.response.PageResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,6 +17,6 @@ public interface ProductService {
     PageResponse<ProductResponseDto> searchProducts(String keyword, Pageable pageable);
     ProductResponseDto updateProduct(Long id, ProductRequestDto dto);
     void deleteProduct(Long id);
-
     PageResponse<ProductResponseDto> filterProducts(ProductFilterCriteriaDto criteria, Pageable pageable);
+    ProductResponseDto uploadProductImage(Long id, MultipartFile file);
 }
