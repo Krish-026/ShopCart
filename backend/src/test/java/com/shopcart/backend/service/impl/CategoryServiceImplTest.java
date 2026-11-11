@@ -29,7 +29,7 @@ public class CategoryServiceImplTest {
     private CategoryServiceImpl categoryService;
 
     @Test
-    void createCategory_ShouldReturnCategoryResponse_WhenCategoryIsValid(){
+    void createCategory_ShouldReturnCategoryResponse_WhenCategoryIsValid() {
         //Arrange
         CategoryRequestDto request = new CategoryRequestDto();
         request.setName("Electronics");
@@ -58,7 +58,7 @@ public class CategoryServiceImplTest {
     }
 
     @Test
-    void createCategory_ShouldThrowException_WhenCategoryAlreadyExists(){
+    void createCategory_ShouldThrowException_WhenCategoryAlreadyExists() {
         // Arrange
         CategoryRequestDto request = new CategoryRequestDto();
         request.setName("Electronics");
@@ -134,7 +134,7 @@ public class CategoryServiceImplTest {
     }
 
     @Test
-    void getCategoryById_ShouldReturnCategory_WhenCategoryExists(){
+    void getCategoryById_ShouldReturnCategory_WhenCategoryExists() {
         // Arrange
         Long categoryId = 1L;
 
@@ -159,7 +159,6 @@ public class CategoryServiceImplTest {
         verify(categoryRepository).findById(categoryId);
     }
 
-
     @Test
     void getCategoryById_ShouldThrowException_WhenCategoryDoesNotExist() {
 
@@ -178,6 +177,103 @@ public class CategoryServiceImplTest {
         verify(categoryRepository).findById(categoryId);
     }
 
+    @Test
+    void getCategoryBySlug_ShouldReturnCategory_WhenCategoryExists() {
+        // Arrange
+        String slug = "electronics";
+
+        Category category = Category.builder()
+                .id(1L)
+                .name("Electronics")
+                .slug(slug)
+                .build();
+
+        when(categoryRepository.findBySlug(slug))
+                .thenReturn(Optional.of(category));
+
+        // Act
+        CategoryResponseDto response = categoryService.getCategoryBySlug(slug);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals("Electronics", response.getName());
+        assertEquals(slug, response.getSlug());
+
+        verify(categoryRepository).findBySlug(slug);
+
+
+    }
+
+    @Test
+    void getCategoryBySlug_ShouldThrowException_WhenCategoryDoesNotExist() {
+        // Arrange
+        String slug = "unknown-categroy";
+        when(categoryRepository.findBySlug(slug))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> categoryService.getCategoryBySlug(slug)
+        );
+
+        verify(categoryRepository).findBySlug(slug);
+    }
+
+    @Test
+    void updateCategory_ShouldReturnUpdatedCategory_WhenCategoryExists() {
+        // Arrange
+        Long categoryId = 1L;
+
+        Category existingCategory  = Category.builder()
+                .id(categoryId)
+                .name("Electronics")
+                .slug("electronics")
+                .build();
+
+        CategoryRequestDto request = new CategoryRequestDto();
+        request.setName("Home Appliances");
+
+        when(categoryRepository.findById(categoryId))
+                .thenReturn(Optional.of(existingCategory));
+
+        when(categoryRepository.save(any(Category.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        CategoryResponseDto response = categoryService.updateCategory(categoryId, request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(categoryId, response.getId());
+        assertEquals("Home Appliances", response.getName());
+        assertEquals("home-appliances", response.getSlug());
+
+        verify(categoryRepository).findById(categoryId);
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategory_ShouldThrowException_WhenCategoryDoesNotExist() {
+        // Arrange
+        Long categoryId = 99L;
+
+        CategoryRequestDto request = new CategoryRequestDto();
+        request.setName("Home Appliances");
+
+        when(categoryRepository.findById(categoryId))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> categoryService.updateCategory(categoryId, request)
+        );
+
+        verify(categoryRepository).findById(categoryId);
+        verify(categoryRepository, never()).save(any(Category.class));
+    }
 }
 
 
