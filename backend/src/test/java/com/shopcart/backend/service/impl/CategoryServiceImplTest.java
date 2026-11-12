@@ -5,7 +5,6 @@ import com.shopcart.backend.dto.CategoryResponseDto;
 import com.shopcart.backend.entity.Category;
 import com.shopcart.backend.exception.ResourceNotFoundException;
 import com.shopcart.backend.repository.CategoryRepository;
-import com.shopcart.backend.service.CategoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -274,4 +273,40 @@ public class CategoryServiceImplTest {
         verify(categoryRepository).findById(categoryId);
         verify(categoryRepository, never()).save(any(Category.class));
     }
+
+    @Test
+    void deleteCategory_ShouldDeleteCategory_WhenCategoryExists() {
+        // Arrange
+        Long categoryId = 1L;
+
+        when(categoryRepository.existsById(categoryId))
+                .thenReturn(true);
+
+        // Act
+        categoryService.deleteCategory(categoryId);
+
+        // Assert
+        verify(categoryRepository).existsById(categoryId);
+        verify(categoryRepository).deleteById(categoryId);
+    }
+
+    @Test
+    void deleteCategory_ShouldThrowException_WhenCategoryDoesNotExist() {
+        // Arrange
+        Long categoryId = 99L;
+
+        when(categoryRepository.existsById(categoryId))
+                .thenReturn(false);
+
+        // Act & Assert
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> categoryService.deleteCategory(categoryId)
+        );
+
+        // Verify
+        verify(categoryRepository).existsById(categoryId);
+        verify(categoryRepository, never()).deleteById(categoryId);
+    }
+
 }
