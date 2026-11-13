@@ -16,8 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
@@ -83,6 +82,33 @@ public class UserServiceImplTest {
         verify(userRepository).existsByEmail("john@example.com");
         verify(roleRepository).findByName("ROLE_CUSTOMER");
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerUser_ShouldThrowException_WhenEmailAlreadyExists() {
+        // Arrange
+        UserRegistrationDto request = new UserRegistrationDto();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("john@example.com");
+        request.setPassword("password123");
+
+        when(userRepository.existsByEmail(request.getEmail()))
+                .thenReturn(true);
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.registerUser(request)
+        );
+
+        assertEquals("Email is already registered!", exception.getMessage());
+
+        verify(userRepository).existsByEmail("john@example.com");
+
+        verify(roleRepository, never()).findByName("ROLE_CUSTOMER");
+        verify(passwordEncoder, never()).encode("password123");
+        verify(userRepository, never()).save(any(User.class));
     }
 
 }
