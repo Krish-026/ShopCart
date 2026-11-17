@@ -6,7 +6,6 @@ import com.shopcart.backend.entity.User;
 import com.shopcart.backend.repository.RoleRepository;
 import com.shopcart.backend.repository.UserRepository;
 import com.shopcart.backend.service.UserService;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

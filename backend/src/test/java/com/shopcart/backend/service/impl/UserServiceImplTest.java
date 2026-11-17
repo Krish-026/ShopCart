@@ -7,6 +7,7 @@ import com.shopcart.backend.repository.RoleRepository;
 import com.shopcart.backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -81,7 +82,15 @@ public class UserServiceImplTest {
         verify(passwordEncoder).encode("password123");
         verify(userRepository).existsByEmail("john@example.com");
         verify(roleRepository).findByName("ROLE_CUSTOMER");
-        verify(userRepository).save(any(User.class));
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+        assertEquals("John", savedUser.getFirstName());
+        assertEquals("Doe", savedUser.getLastName());
+        assertEquals("john@example.com", savedUser.getEmail());
+        assertEquals(encodedPassword, savedUser.getPassword());
+        assertTrue(savedUser.getRoles().contains(customerRole));
     }
 
     @Test
@@ -111,4 +120,37 @@ public class UserServiceImplTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    @Test
+    void registerUser_ShouldThrowException_WhenCustomerRoleNotFound() {
+        // Arrange
+        UserRegistrationDto request = new UserRegistrationDto();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("john@example.com");
+        request.setPassword("password123");
+
+        when(userRepository.existsByEmail(request.getEmail()))
+                .thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_CUSTOMER"))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.registerUser(request)
+        );
+
+        assertEquals(
+                "Error: Default role not found in database;",
+                exception.getMessage()
+        );
+
+        // Verify interactions
+        verify(userRepository).existsByEmail("john@example.com");
+        verify(roleRepository).findByName("ROLE_CUSTOMER");
+
+        verify(passwordEncoder, never()).encode("password123");
+        verify(userRepository, never()).save(any(User.class));
+    }
 }
