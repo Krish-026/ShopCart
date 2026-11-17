@@ -1,5 +1,6 @@
 package com.shopcart.backend.controller;
 
+import com.shopcart.backend.dto.ProductFilterCriteriaDto;
 import com.shopcart.backend.dto.ProductRequestDto;
 import com.shopcart.backend.dto.ProductResponseDto;
 import com.shopcart.backend.response.ApiResponse;
@@ -15,10 +16,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -36,7 +40,7 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
-    ){
+    ) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
         PageResponse<ProductResponseDto> response = productService.getAllProducts(pageable);
         return ResponseEntity.ok(
@@ -47,7 +51,7 @@ public class ProductController {
     // PUBLIC: Get product by ID
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> getProductById(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<ProductResponseDto>> getProductById(@PathVariable Long id) {
         ProductResponseDto response = productService.getProductById(id);
         return ResponseEntity.ok(
                 ResponseUtil.success(response, "Products retrieve successfully")
@@ -63,8 +67,8 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
-    ){
-        Pageable pageable = createPageable(page,size, sortBy, sortDir);
+    ) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDir);
 
         PageResponse<ProductResponseDto> response = productService.getProductsByCategory(categoryId, pageable);
         return ResponseEntity.ok(
@@ -81,7 +85,7 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
-    ){
+    ) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
 
         PageResponse<ProductResponseDto> response = productService.searchProducts(query, pageable);
@@ -90,12 +94,42 @@ public class ProductController {
         );
     }
 
+    @GetMapping("/filter")
+    @Operation(summary = "Filter products dynamically by keyword, category, price range and stock")
+    public ResponseEntity<ApiResponse<PageResponse<ProductResponseDto>>> filterProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean inStock,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+            ) {
+
+        ProductFilterCriteriaDto criteria = ProductFilterCriteriaDto.builder()
+                .keyword(keyword)
+                .categoryId(categoryId)
+                .maxPrice(maxPrice)
+                .minPrice(minPrice)
+                .inStock(inStock)
+                .build();
+
+        Pageable pageable = createPageable(page, size, sortBy, sortDir);
+
+        PageResponse<ProductResponseDto> response = productService.filterProducts(criteria, pageable);
+        return ResponseEntity.ok(
+                ResponseUtil.success(response, "Products filtered successfully")
+        );
+    }
+
     // ADMIN ONLY: Create product
     @PostMapping
     @Operation(summary = "Create Product")
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> createProduct(@Valid @RequestBody ProductRequestDto dto){
+    public ResponseEntity<ApiResponse<ProductResponseDto>> createProduct(@Valid @RequestBody ProductRequestDto dto) {
         ProductResponseDto response = productService.createProduct(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ResponseUtil.success(response, "Product created successfully"));
@@ -106,16 +140,33 @@ public class ProductController {
     @Operation(summary = "Update Product")
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequestDto dto){
+    public ResponseEntity<ApiResponse<ProductResponseDto>> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequestDto dto) {
         ProductResponseDto response = productService.updateProduct(id, dto);
         return ResponseEntity.ok(ResponseUtil.success(response, "Product updated successfully"));
     }
+
+    // ADMIN ONLY: Upload product image
+    @PostMapping(value = "/{id}/image",
+    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload an image for specific product")
+    @PreAuthorize("hasRole('ADMIN')")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<ProductResponseDto>> uploadImage(
+            @PathVariable Long id,
+            @RequestParam("file")MultipartFile file
+            ) {
+        ProductResponseDto response = productService.uploadProductImage(id, file);
+        return ResponseEntity.ok(
+                ResponseUtil.success(response, "Product image uploaded successfully")
+        );
+    }
+
 
     // ADMIN ONLY: Delete product
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok(ResponseUtil.success(null, "Product deleted successfully"));
     }

@@ -54,6 +54,9 @@ public class SecurityConfig {
                         .requestMatchers("/orders/**").authenticated()
                         .requestMatchers("/payments/**").authenticated()
 
+                        // Public access to uploaded product images
+                        .requestMatchers(HttpMethod.GET, "/uploads/products/**").permitAll()
+
                         // Any other request
                         .anyRequest().authenticated()
                 )
