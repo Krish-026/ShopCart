@@ -29,7 +29,7 @@ public class AddressServiceImpl implements AddressService {
         User user = getUser(userEmail);
         // If this is the user's first address or marked as default, reset other defaults
         List<Address> existing = addressRepository.findByUserIdOrderByIsDefaultDescCreatedAtDesc(user.getId());
-        boolean shouldBeDefault = Boolean.TRUE.equals(request.getIsDefault() || existing.isEmpty());
+        boolean shouldBeDefault = Boolean.TRUE.equals(request.getIsDefault()) || existing.isEmpty();
 
         if(shouldBeDefault && !existing.isEmpty()){
             addressRepository.resetDefaultAddressForUser(user.getId());
@@ -105,7 +105,7 @@ public class AddressServiceImpl implements AddressService {
         addressRepository.resetDefaultAddressForUser(user.getId());
         address.setIsDefault(true);
         Address updated = addressRepository.save(address);
-        return mapToDto(address);
+        return mapToDto(updated);
     }
 
     @Override
