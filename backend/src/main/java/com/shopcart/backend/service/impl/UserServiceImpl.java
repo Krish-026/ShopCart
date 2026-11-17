@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword())) // We'll hash this later
+                .password(passwordEncoder.encode(dto.getPassword()))
                 .roles(Set.of(customerRole))
                 .build();
         return userRepository.save(user);
